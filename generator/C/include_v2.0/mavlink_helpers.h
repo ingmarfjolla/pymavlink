@@ -11,7 +11,7 @@
 #endif
 
 #include "mavlink_sha256.h"
-
+#include "aead.c"
 #ifdef MAVLINK_USE_CXX_NAMESPACE
 namespace mavlink {
 #endif
@@ -361,6 +361,30 @@ MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint
             buf[8] = (msgid >> 8) & 0xFF;
             buf[9] = (msgid >> 16) & 0xFF;
         }
+
+
+	bool encrypt = 0;
+	if (encrypt){
+		
+		unsigned char key[CRYPTO_KEYBYTES] = {0};
+		
+		// nonce based on message sequence number + system ID + component ID
+		unsigned char nonce[CRYPTO_NPUBBYTES] = {0};
+		memcpy(nonce, &status->current_tx_seq, sizeof(status->current_tx_seq));
+		memcpy(nonce + sizeof(status->current_tx_seq), &mavlink_system.sysid, sizeof(mavlink_system.sysid));
+		memcpy(nonce + sizeof(status->current_tx_seq) + sizeof(mavlink_system.sysid), 
+			&mavlink_system.compid, sizeof(mavlink_system.compid));
+
+		unsigned char encrypted_packet[length + CRYPTO_ABYTES];  // Encrypted payload buffer
+		unsigned long long encrypted_length;
+
+		// encryption here
+		crypto_aead_encrypt(encrypted_packet, &encrypted_length,
+							(const unsigned char*)packet, length,  
+							NULL, 0,  
+							NULL, nonce, key);
+		length = (uint8_t) encrypted_length;
+	}	
 	status->current_tx_seq++;
 	checksum = crc_calculate((const uint8_t*)&buf[1], header_len);
 	crc_accumulate_buffer(&checksum, packet, length);
