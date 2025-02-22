@@ -267,6 +267,28 @@ MAVLINK_HELPER uint16_t mavlink_finalize_message_buffer(mavlink_message_t* msg, 
 		buf[8] = (msg->msgid >> 8) & 0xFF;
 		buf[9] = (msg->msgid >> 16) & 0xFF;
 	}
+	bool encrypt = 0;
+	if (encrypt){
+		
+		unsigned char key[CRYPTO_KEYBYTES] = {0};
+		
+		// nonce based on message sequence number + system ID + component ID
+		unsigned char nonce[CRYPTO_NPUBBYTES] = {0};
+		memcpy(nonce, &status->current_tx_seq, sizeof(status->current_tx_seq));
+		memcpy(nonce + sizeof(status->current_tx_seq), &mavlink_system.sysid, sizeof(mavlink_system.sysid));
+		memcpy(nonce + sizeof(status->current_tx_seq) + sizeof(mavlink_system.sysid), 
+			&mavlink_system.compid, sizeof(mavlink_system.compid));
+
+		unsigned char encrypted_packet[length + CRYPTO_ABYTES];  // Encrypted payload buffer
+		unsigned long long encrypted_length;
+
+		// encryption here
+		crypto_aead_encrypt(encrypted_packet, &encrypted_length,
+							(const unsigned char*)packet, length,  
+							NULL, 0,  
+							NULL, nonce, key);
+		length = (uint8_t) encrypted_length;
+	}	
 	
 	uint16_t checksum = crc_calculate(&buf[1], header_len-1);
 	crc_accumulate_buffer(&checksum, _MAV_PAYLOAD(msg), msg->len);
@@ -818,6 +840,33 @@ MAVLINK_HELPER uint8_t mavlink_frame_char_buffer(mavlink_message_t* rxmsg,
 					status->msg_received = MAVLINK_FRAMING_BAD_SIGNATURE;
 				}
 			}
+			bool decrypt = 1;  
+			if (decrypt) {
+				unsigned char key[CRYPTO_KEYBYTES] = {0};
+				
+				// Nonce based on message sequence number + system ID + component ID
+				unsigned char nonce[CRYPTO_NPUBBYTES] = {0};
+				memcpy(nonce, &status->current_tx_seq, sizeof(status->current_tx_seq));
+				memcpy(nonce + sizeof(status->current_tx_seq), &mavlink_system.sysid, sizeof(mavlink_system.sysid));
+				memcpy(nonce + sizeof(status->current_tx_seq) + sizeof(mavlink_system.sysid), 
+					&mavlink_system.compid, sizeof(mavlink_system.compid));
+
+				unsigned char decrypted_packet[length];  // Buffer for decrypted payload
+				unsigned long long decrypted_length;
+
+				// Decryption here
+				if (crypto_aead_decrypt(decrypted_packet, &decrypted_length,
+										NULL, 
+										(const unsigned char*)packet, length,  
+										NULL, 0,  
+										nonce, key) == 0) { 
+					memcpy(packet, decrypted_packet, decrypted_length);
+					length = (uint8_t)decrypted_length;
+				} else {
+					status->msg_received = MAVLINK_FRAMING_BAD_SIGNATURE; 
+				}
+			}	
+
 			status->parse_state = MAVLINK_PARSE_STATE_IDLE;
 			if (r_message != NULL) {
 				memcpy(r_message, rxmsg, sizeof(mavlink_message_t));
