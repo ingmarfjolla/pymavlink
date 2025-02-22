@@ -840,7 +840,7 @@ MAVLINK_HELPER uint8_t mavlink_frame_char_buffer(mavlink_message_t* rxmsg,
 					status->msg_received = MAVLINK_FRAMING_BAD_SIGNATURE;
 				}
 			}
-			bool decrypt = 1;  
+			bool decrypt = 0;  
 			if (decrypt) {
 				unsigned char key[CRYPTO_KEYBYTES] = {0};
 				
