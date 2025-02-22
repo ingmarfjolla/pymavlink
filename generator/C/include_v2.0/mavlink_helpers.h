@@ -850,12 +850,12 @@ MAVLINK_HELPER uint8_t mavlink_frame_char_buffer(mavlink_message_t* rxmsg,
 				memcpy(nonce + sizeof(status->current_tx_seq), &mavlink_system.sysid, sizeof(mavlink_system.sysid));
 				memcpy(nonce + sizeof(status->current_tx_seq) + sizeof(mavlink_system.sysid), 
 					&mavlink_system.compid, sizeof(mavlink_system.compid));
-
+				uint8_t length = rxmsg ->len;
 				unsigned char decrypted_packet[length];  // Buffer for decrypted payload
 				unsigned long long decrypted_length;
 
 				// Decryption here
-				uint8_t length = rxmsg ->len;
+				
 				if (crypto_aead_decrypt(decrypted_packet, &decrypted_length,
 										NULL, 
 										(const unsigned char*)_MAV_PAYLOAD(rxmsg), length,  
