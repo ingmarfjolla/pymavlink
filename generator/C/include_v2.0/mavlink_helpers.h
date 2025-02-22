@@ -284,7 +284,7 @@ MAVLINK_HELPER uint16_t mavlink_finalize_message_buffer(mavlink_message_t* msg, 
 
 		// encryption here
 		crypto_aead_encrypt(encrypted_packet, &encrypted_length,
-							(const unsigned char*)packet, length,  
+							(const unsigned char*)_MAV_PAYLOAD(msg), length,  
 							NULL, 0,  
 							NULL, nonce, key);
 		length = (uint8_t) encrypted_length;
@@ -855,9 +855,10 @@ MAVLINK_HELPER uint8_t mavlink_frame_char_buffer(mavlink_message_t* rxmsg,
 				unsigned long long decrypted_length;
 
 				// Decryption here
+				uint8_t length = rxmsg ->len;
 				if (crypto_aead_decrypt(decrypted_packet, &decrypted_length,
 										NULL, 
-										(const unsigned char*)packet, length,  
+										(const unsigned char*)_MAV_PAYLOAD(rxmsg), length,  
 										NULL, 0,  
 										nonce, key) == 0) { 
 					memcpy(packet, decrypted_packet, decrypted_length);
