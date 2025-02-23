@@ -861,7 +861,7 @@ MAVLINK_HELPER uint8_t mavlink_frame_char_buffer(mavlink_message_t* rxmsg,
 										(const unsigned char*)_MAV_PAYLOAD(rxmsg), length,  
 										NULL, 0,  
 										nonce, key) == 0) { 
-					memcpy(packet, decrypted_packet, decrypted_length);
+					memcpy(_MAV_PAYLOAD_NON_CONST(rxmsg), decrypted_packet, decrypted_length);
 					length = (uint8_t)decrypted_length;
 				} else {
 					status->msg_received = MAVLINK_FRAMING_BAD_SIGNATURE; 
