@@ -269,7 +269,7 @@ MAVLINK_HELPER uint16_t mavlink_finalize_message_buffer(mavlink_message_t* msg, 
 		buf[9] = (msg->msgid >> 16) & 0xFF;
 	}
 	bool encrypt = 1;
-	if (encrypt){
+	if (encrypt && msg->msgid!=0){
 		unsigned char key[32] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10,
 			11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
 			22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
@@ -395,7 +395,7 @@ MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint
 
 
 	bool encrypt = 1;
-	if (encrypt){
+	if (encrypt & msgid != 0){
 		unsigned char key[32] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10,
 			11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
 			22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
@@ -856,7 +856,7 @@ MAVLINK_HELPER uint8_t mavlink_frame_char_buffer(mavlink_message_t* rxmsg,
 				}
 			}
 			bool decrypt = 1;  
-			if (decrypt) {
+			if (decrypt && rxmsg->msgid != 0) {
 				unsigned char key[32] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10,
 					11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
 					22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
