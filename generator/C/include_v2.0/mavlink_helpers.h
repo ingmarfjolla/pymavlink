@@ -275,18 +275,17 @@ MAVLINK_HELPER uint16_t mavlink_finalize_message_buffer(mavlink_message_t* msg, 
 			22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
 		
 		// Nonce based on message sequence number + system ID + component ID
-		unsigned char nonce[32] = {0};
+		unsigned char nonce[32] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10,
+			11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+			22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
 		//unsigned char key[CRYPTO_KEYBYTES] = {0};
 		
 		// nonce based on message sequence number + system ID + component ID
-		//unsigned char nonce[CRYPTO_NPUBBYTES] = {0};
-		memcpy(nonce, &status->current_tx_seq, sizeof(status->current_tx_seq));
-		memcpy(nonce + sizeof(status->current_tx_seq), &system_id, sizeof(system_id));
-		memcpy(nonce + sizeof(status->current_tx_seq) + sizeof(system_id), &component_id, sizeof(component_id));
 
-		// memcpy(nonce + sizeof(status->current_tx_seq), &mavlink_system.sysid, sizeof(mavlink_system.sysid));
-		// memcpy(nonce + sizeof(status->current_tx_seq) + sizeof(mavlink_system.sysid), 
-		// 	&mavlink_system.compid, sizeof(mavlink_system.compid));
+		// memcpy(nonce, &status->current_tx_seq, sizeof(status->current_tx_seq));
+		// memcpy(nonce + sizeof(status->current_tx_seq), &system_id, sizeof(system_id));
+		// memcpy(nonce + sizeof(status->current_tx_seq) + sizeof(system_id), &component_id, sizeof(component_id));
+
 
 		unsigned char encrypted_packet[length + 32];  // Encrypted payload buffer
 		unsigned long long encrypted_length;
@@ -401,17 +400,22 @@ MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint
 			22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
 		
 		// Nonce based on message sequence number + system ID + component ID
-		unsigned char nonce[32] = {0};
+		unsigned char nonce[32] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10,
+			11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+			22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
 		
 		//unsigned char key[CRYPTO_KEYBYTES] = {0};
 		
 		// nonce based on message sequence number + system ID + component ID
 		//unsigned char nonce[CRYPTO_NPUBBYTES] = {0};
-		memcpy(nonce, &status->current_tx_seq, sizeof(status->current_tx_seq));
-		memcpy(nonce + sizeof(status->current_tx_seq), &mavlink_system.sysid, sizeof(mavlink_system.sysid));
-		memcpy(nonce + sizeof(status->current_tx_seq) + sizeof(mavlink_system.sysid), 
-			&mavlink_system.compid, sizeof(mavlink_system.compid));
 
+		//commenting this out for later///
+		// memcpy(nonce, &status->current_tx_seq, sizeof(status->current_tx_seq));
+		// memcpy(nonce + sizeof(status->current_tx_seq), &mavlink_system.sysid, sizeof(mavlink_system.sysid));
+		// memcpy(nonce + sizeof(status->current_tx_seq) + sizeof(mavlink_system.sysid), 
+		// 	&mavlink_system.compid, sizeof(mavlink_system.compid));
+		////
+		
 		unsigned char encrypted_packet[length + 32];  // Encrypted payload buffer
 		unsigned long long encrypted_length;
 
@@ -862,14 +866,16 @@ MAVLINK_HELPER uint8_t mavlink_frame_char_buffer(mavlink_message_t* rxmsg,
 					22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
 				
 				// Nonce based on message sequence number + system ID + component ID
-				unsigned char nonce[32] = {0};
-				memcpy(nonce, &status->current_tx_seq, sizeof(status->current_tx_seq));
-				// memcpy(nonce + sizeof(status->current_tx_seq), &mavlink_system.sysid, sizeof(mavlink_system.sysid));
-				// memcpy(nonce + sizeof(status->current_tx_seq) + sizeof(mavlink_system.sysid), 
-				// 	&mavlink_system.compid, sizeof(mavlink_system.compid));
-				memcpy(nonce + sizeof(status->current_tx_seq), &rxmsg->sysid, sizeof(rxmsg->sysid));
-				memcpy(nonce + sizeof(status->current_tx_seq) + sizeof(rxmsg->sysid), 
-						&rxmsg->compid, sizeof(rxmsg->compid));
+				unsigned char nonce[32] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10,
+					11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+					22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
+				// commebnting this out for later 
+				// memcpy(nonce, &status->current_tx_seq, sizeof(status->current_tx_seq));
+				// memcpy(nonce + sizeof(status->current_tx_seq), &rxmsg->sysid, sizeof(rxmsg->sysid));
+				// memcpy(nonce + sizeof(status->current_tx_seq) + sizeof(rxmsg->sysid), 
+				// 		&rxmsg->compid, sizeof(rxmsg->compid));
+			    // 
+
 				uint8_t length = rxmsg ->len;
 				unsigned char decrypted_packet[length];  // Buffer for decrypted payload
 				unsigned long long decrypted_length;
