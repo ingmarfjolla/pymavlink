@@ -298,7 +298,7 @@ MAVLINK_HELPER uint16_t mavlink_finalize_message_buffer(mavlink_message_t* msg, 
 			NULL, nonce, key);
 		if (enc_result == 0) {
 		// SUCCESS: copy encrypted data back into message payload
-		memcpy(_MAV_PAYLOAD_NON_CONST(msg), encrypted_packet, encrypted_length);
+		memcpy((unsigned char*)_MAV_PAYLOAD_NON_CONST(msg), encrypted_packet, encrypted_length);
 		printf("Encrypted a packet and replaced OG one !\n");
 		//msg->len = encrypted_length; // Update payload length to encrypted length!
 		} else {
@@ -437,8 +437,8 @@ MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint
 			NULL, nonce, key);
 		if (enc_result == 0) {
 		// Use memcpy explicitly here, safely copy encrypted payload back into original buffer
-		memcpy(packet, encrypted_packet, encrypted_length);
-		printf("Encrypted a packet and replaced OG one !\n");
+		memcpy((unsigned char*)packet, encrypted_packet, encrypted_length);
+		printf("Encrypted a packet in the chan functionand replaced OG one !\n");
 		//length = (uint8_t) encrypted_length; 
 		} else {
 		printf("Encryption failed!\n");
