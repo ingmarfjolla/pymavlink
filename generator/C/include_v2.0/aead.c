@@ -158,6 +158,7 @@ int crypto_aead_decrypt(unsigned char* m, unsigned long long* mlen,
 
   if (adlen) {
     /* full associated data blocks */
+    printf("does this think im hre");
     while (adlen >= ASCON_128A_RATE) {
       s.x[0] ^= LOADBYTES(ad, 8);
       s.x[1] ^= LOADBYTES(ad + 8, 8);
