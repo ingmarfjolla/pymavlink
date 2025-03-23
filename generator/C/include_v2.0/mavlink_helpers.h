@@ -439,7 +439,8 @@ MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint
 		// Use memcpy explicitly here, safely copy encrypted payload back into original buffer
 		memcpy((unsigned char*)packet, encrypted_packet, encrypted_length);
 		printf("Encrypted a packet in the chan functionand replaced OG one !\n");
-		//length = (uint8_t) encrypted_length; 
+		length = (uint8_t) encrypted_length; 
+		buf[1] = length;
 		} else {
 		printf("Encryption failed!\n");
 		return;
