@@ -473,6 +473,7 @@ MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint
 	}
 	printf("Step 5");
 	MAVLINK_END_UART_SEND(chan, header_len + 3 + (uint16_t)length + (uint16_t)signature_len);
+	printf("leaving message chan send fucntion");
 }
 
 /**
