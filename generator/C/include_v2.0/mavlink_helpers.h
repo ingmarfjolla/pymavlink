@@ -912,7 +912,7 @@ MAVLINK_HELPER uint8_t mavlink_frame_char_buffer(mavlink_message_t* rxmsg,
 				int decr_result = crypto_aead_decrypt(decrypted_packet, &decrypted_length,
 					NULL, 
 					(const unsigned char*)_MAV_PAYLOAD(rxmsg), length,  
-					NULL, NULL,  
+					NULL, 0,  
 					nonce, key);
 				printf("Some form of decryption happened, lets go to the next line");
 				
