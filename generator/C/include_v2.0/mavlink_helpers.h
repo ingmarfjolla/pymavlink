@@ -369,38 +369,40 @@ MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint
 	uint8_t signature[MAVLINK_SIGNATURE_BLOCK_LEN];
 	bool mavlink1 = (status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) != 0;
 	bool signing = 	(!mavlink1) && status->signing && (status->signing->flags & MAVLINK_SIGNING_FLAG_SIGN_OUTGOING);
+	unsigned char encrypted_packet[length + 16];  // Encrypted payload buffer
 
-        if (mavlink1) {
-            length = min_length;
-            if (msgid > 255) {
-                // can't send 16 bit messages
-                _mav_parse_error(status);
-                return;
-            }
-            header_len = MAVLINK_CORE_HEADER_MAVLINK1_LEN;
-            buf[0] = MAVLINK_STX_MAVLINK1;
-            buf[1] = length;
-            buf[2] = status->current_tx_seq;
-            buf[3] = mavlink_system.sysid;
-            buf[4] = mavlink_system.compid;
-            buf[5] = msgid & 0xFF;
-        } else {
-	    uint8_t incompat_flags = 0;
-	    if (signing) {
+	if (mavlink1) {
+			length = min_length;
+			if (msgid > 255) {
+				// can't send 16 bit messages
+				_mav_parse_error(status);
+				return;
+			}
+			header_len = MAVLINK_CORE_HEADER_MAVLINK1_LEN;
+			buf[0] = MAVLINK_STX_MAVLINK1;
+			buf[1] = length;
+			buf[2] = status->current_tx_seq;
+			buf[3] = mavlink_system.sysid;
+			buf[4] = mavlink_system.compid;
+			buf[5] = msgid & 0xFF;
+		} 
+	else {
+		uint8_t incompat_flags = 0;
+		if (signing) {
 		incompat_flags |= MAVLINK_IFLAG_SIGNED;
-	    }
-            length = _mav_trim_payload(packet, length);
-            buf[0] = MAVLINK_STX;
-            buf[1] = length;
-            buf[2] = incompat_flags;
-            buf[3] = 0; // compat_flags
-            buf[4] = status->current_tx_seq;
-            buf[5] = mavlink_system.sysid;
-            buf[6] = mavlink_system.compid;
-            buf[7] = msgid & 0xFF;
-            buf[8] = (msgid >> 8) & 0xFF;
-            buf[9] = (msgid >> 16) & 0xFF;
-        }
+		}
+			length = _mav_trim_payload(packet, length);
+			buf[0] = MAVLINK_STX;
+			buf[1] = length;
+			buf[2] = incompat_flags;
+			buf[3] = 0; // compat_flags
+			buf[4] = status->current_tx_seq;
+			buf[5] = mavlink_system.sysid;
+			buf[6] = mavlink_system.compid;
+			buf[7] = msgid & 0xFF;
+			buf[8] = (msgid >> 8) & 0xFF;
+			buf[9] = (msgid >> 16) & 0xFF;
+		}
 
 
 	bool encrypt = 1;
@@ -427,7 +429,6 @@ MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint
 		// 	&mavlink_system.compid, sizeof(mavlink_system.compid));
 		////
 		
-		unsigned char encrypted_packet[length + 16];  // Encrypted payload buffer
 		unsigned long long encrypted_length;
 
 		// encryption here
