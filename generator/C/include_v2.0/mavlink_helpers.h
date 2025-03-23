@@ -466,7 +466,7 @@ MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint
 	printf("Step 2");
 	_mavlink_send_uart(chan, (const char *)buf, header_len+1);
 	printf("Step 3");
-	_mavlink_send_uart(chan, encrypted_packet, length);
+	_mavlink_send_uart(chan, (const char *)encrypted_packet, length);
 	printf("Step 4");
 	_mavlink_send_uart(chan, (const char *)ck, 2);
 	if (signature_len != 0) {
