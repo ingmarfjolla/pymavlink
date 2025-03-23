@@ -460,14 +460,18 @@ MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint
 						    (const uint8_t *)packet, length, ck);
 	}
 #endif
-
+	printf("Step 1");
 	MAVLINK_START_UART_SEND(chan, header_len + 3 + (uint16_t)length + (uint16_t)signature_len);
+	printf("Step 2");
 	_mavlink_send_uart(chan, (const char *)buf, header_len+1);
+	printf("Step 3");
 	_mavlink_send_uart(chan, packet, length);
+	printf("Step 4");
 	_mavlink_send_uart(chan, (const char *)ck, 2);
 	if (signature_len != 0) {
 		_mavlink_send_uart(chan, (const char *)signature, signature_len);
 	}
+	printf("Step 5");
 	MAVLINK_END_UART_SEND(chan, header_len + 3 + (uint16_t)length + (uint16_t)signature_len);
 }
 
