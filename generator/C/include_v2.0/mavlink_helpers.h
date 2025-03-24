@@ -916,8 +916,7 @@ MAVLINK_HELPER uint8_t mavlink_frame_char_buffer(mavlink_message_t* rxmsg,
 					NULL, 0,  
 					nonce, key);
 				//printf("Some form of decryption happened, lets go to the next line");
-				printf("Decryption result for ardupilot is?");
-				printf(decr_result);
+				printf("Decryption result for Ardupilot is %d\n", decr_result);
 				if (decr_result == 0) { 
 					//printf("[MAVLink Parser] something was decrypted but not finished?");
 					memcpy(_MAV_PAYLOAD_NON_CONST(rxmsg), decrypted_packet, decrypted_length);
