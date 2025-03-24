@@ -439,11 +439,11 @@ MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint
 		if (enc_result == 0) {
 		// Use memcpy explicitly here, safely copy encrypted payload back into original buffer
 		//memcpy((unsigned char*)packet, encrypted_packet, encrypted_length);
-		printf("Encrypted a packet in the chan functionand replaced OG one !\n");
+		//printf("Encrypted a packet in the chan functionand replaced OG one !\n");
 		length = (uint8_t) encrypted_length; 
 		buf[1] = length;
 		} else {
-		printf("Encryption failed!\n");
+			printf("Encryption failed!\n");
 		return;
 		}
 	}	
@@ -461,20 +461,20 @@ MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint
 						    (const uint8_t *)packet, length, ck);
 	}
 #endif
-	printf("Step 1");
+	//printf("Step 1");
 	MAVLINK_START_UART_SEND(chan, header_len + 3 + (uint16_t)length + (uint16_t)signature_len);
-	printf("Step 2");
+	//printf("Step 2");
 	_mavlink_send_uart(chan, (const char *)buf, header_len+1);
-	printf("Step 3");
+	//printf("Step 3");
 	_mavlink_send_uart(chan, (const char *)encrypted_packet, length);
-	printf("Step 4");
+	//printf("Step 4");
 	_mavlink_send_uart(chan, (const char *)ck, 2);
 	if (signature_len != 0) {
 		_mavlink_send_uart(chan, (const char *)signature, signature_len);
 	}
-	printf("Step 5");
+	//printf("Step 5");
 	MAVLINK_END_UART_SEND(chan, header_len + 3 + (uint16_t)length + (uint16_t)signature_len);
-	printf("leaving message chan send fucntion");
+	//printf("leaving message chan send fucntion");
 }
 
 /**
@@ -904,24 +904,25 @@ MAVLINK_HELPER uint8_t mavlink_frame_char_buffer(mavlink_message_t* rxmsg,
 			    // 
 
 				uint8_t length = rxmsg ->len;
-				printf("The length of the decrypted packet before decryption seems to be : %d\n " , length);
+				//printf("The length of the decrypted packet before decryption seems to be : %d\n " , length);
 				unsigned char decrypted_packet[length];  // Buffer for decrypted payload
 				unsigned long long decrypted_length;
 
 				// Decryption here
-				printf("[MAVLink Parser] right before i'm supposed to decrypt");
+				//printf("[MAVLink Parser] right before i'm supposed to decrypt");
 				int decr_result = crypto_aead_decrypt(decrypted_packet, &decrypted_length,
 					NULL, 
 					(const unsigned char*)_MAV_PAYLOAD(rxmsg), length,  
 					NULL, 0,  
 					nonce, key);
-				printf("Some form of decryption happened, lets go to the next line");
-				
+				//printf("Some form of decryption happened, lets go to the next line");
+				printf("Decryption result for ardupilot is?");
+				printf(decr_result);
 				if (decr_result == 0) { 
-					printf("[MAVLink Parser] something was decrypted but not finished?");
+					//printf("[MAVLink Parser] something was decrypted but not finished?");
 					memcpy(_MAV_PAYLOAD_NON_CONST(rxmsg), decrypted_packet, decrypted_length);
 					length = (uint8_t)decrypted_length;
-					printf("[MAVLink Parser] something was decrypted?");
+					//printf("[MAVLink Parser] something was decrypted?");
 
 				} else {
 					status->msg_received = MAVLINK_FRAMING_BAD_SIGNATURE; 

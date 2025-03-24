@@ -242,8 +242,7 @@ int crypto_aead_decrypt(unsigned char* m, unsigned long long* mlen,
   /* print output bytes */
   printbytes("m", m - *mlen, *mlen);
   print("\n");
-  printf("finishing?");
-  printf(result);
+
 
   return result;
 }
