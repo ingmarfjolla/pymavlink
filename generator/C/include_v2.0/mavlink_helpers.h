@@ -450,7 +450,7 @@ MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint
 	}	
 	status->current_tx_seq++;
 	checksum = crc_calculate((const uint8_t*)&buf[1], header_len);
-	crc_accumulate_buffer(&checksum, encrypted_packet, length);
+	crc_accumulate_buffer(&checksum, (const char*)encrypted_packet, length);
 	crc_accumulate(crc_extra, &checksum);
 	ck[0] = (uint8_t)(checksum & 0xFF);
 	ck[1] = (uint8_t)(checksum >> 8);
