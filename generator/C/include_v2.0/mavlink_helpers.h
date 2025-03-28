@@ -923,6 +923,7 @@ MAVLINK_HELPER uint8_t mavlink_frame_char_buffer(mavlink_message_t* rxmsg,
 					//printf("[MAVLink Parser] something was decrypted but not finished?");
 					memcpy(_MAV_PAYLOAD_NON_CONST(rxmsg), decrypted_packet, decrypted_length);
 					length = (uint8_t)decrypted_length;
+					rxmsg ->len = (uint8_t)decrypted_length;
 					//printf("[MAVLink Parser] something was decrypted?");
 
 				} else {
