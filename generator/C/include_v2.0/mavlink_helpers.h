@@ -268,7 +268,7 @@ MAVLINK_HELPER uint16_t mavlink_finalize_message_buffer(mavlink_message_t* msg, 
 		buf[8] = (msg->msgid >> 8) & 0xFF;
 		buf[9] = (msg->msgid >> 16) & 0xFF;
 	}
-	bool encrypt = 0;
+	bool encrypt = 1;
 	//printf("[MAVLink Parser] ENTERED mavlink_finalize_message_buffer function");
 	if (encrypt && msg->msgid!=0){
 		unsigned char key[32] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10,
@@ -301,6 +301,8 @@ MAVLINK_HELPER uint16_t mavlink_finalize_message_buffer(mavlink_message_t* msg, 
 		memcpy((unsigned char*)_MAV_PAYLOAD_NON_CONST(msg), encrypted_packet, encrypted_length);
 		printf("Encrypted a packet and replaced OG one !\n");
 		//msg->len = encrypted_length; // Update payload length to encrypted length!
+		msg->len = encrypted_length; // Update payload length to encrypted length!
+		buf[1] = encrypted_length;
 		} else {
 		printf("Encryption failed!");
 		return 0; // abort finalization on encryption failure
