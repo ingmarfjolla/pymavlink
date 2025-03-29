@@ -410,7 +410,7 @@ MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint
 		}
 
 
-	bool encrypt = 1;
+	bool encrypt = 0;
 	//printf("[MAVLink Parser] ENTERED _mav_finalize_message_chan_send function");
 	if (encrypt && msgid != 0){
 		printf("The message ID being encrypted:  %d\n", msgid);
@@ -465,7 +465,7 @@ MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint
 	if (signing) {
 		// possibly add a signature
 		signature_len = mavlink_sign_packet(status->signing, signature, buf, header_len+1,
-						    (const uint8_t *)encrypted_packet, length, ck);
+						    (const uint8_t *)packet, length, ck);
 	}
 #endif
 	//printf("Step 1");
@@ -473,7 +473,7 @@ MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint
 	//printf("Step 2");
 	_mavlink_send_uart(chan, (const char *)buf, header_len+1);
 	//printf("Step 3");
-	_mavlink_send_uart(chan, (const char *)encrypted_packet, length);
+	_mavlink_send_uart(chan, packet, length);
 	//printf("Step 4");
 	_mavlink_send_uart(chan, (const char *)ck, 2);
 	if (signature_len != 0) {
@@ -892,7 +892,7 @@ MAVLINK_HELPER uint8_t mavlink_frame_char_buffer(mavlink_message_t* rxmsg,
 					status->msg_received = MAVLINK_FRAMING_BAD_SIGNATURE;
 				}
 			}
-			bool decrypt = 1;  
+			bool decrypt = 0;  
 			//printf("[MAVLink Parser] ENTERED MAVLINK_PARSE_STATE_GOT_BAD_CRC1 state machine");
 			if (decrypt && rxmsg->msgid != 0) {
 				printf("The message ID being decrypted is:  %d\n", rxmsg->msgid);
