@@ -913,7 +913,7 @@ MAVLINK_HELPER uint8_t mavlink_frame_char_buffer(mavlink_message_t* rxmsg,
 
 				uint8_t length = rxmsg ->len;
 				printf("The length of the decrypted packet before decryption is : %d\n " , length);
-				unsigned char decrypted_packet[length];  // Buffer for decrypted payload
+				unsigned char decrypted_packet[length-16];  // Buffer for decrypted payload
 				unsigned long long decrypted_length;
 
 				// Decryption here
