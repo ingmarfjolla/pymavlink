@@ -369,8 +369,8 @@ MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint
 	uint8_t signature[MAVLINK_SIGNATURE_BLOCK_LEN];
 	bool mavlink1 = (status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) != 0;
 	bool signing = 	(!mavlink1) && status->signing && (status->signing->flags & MAVLINK_SIGNING_FLAG_SIGN_OUTGOING);
-	unsigned char encrypted_packet[length];  // Encrypted payload buffer
-
+	unsigned char encrypted_packet[length + 16];  // Encrypted payload buffer
+	printf("Highball estimate of the length of packet is:  %d\n", length + 16);
 	if (mavlink1) {
 			length = min_length;
 			if (msgid > 255) {
@@ -443,6 +443,7 @@ MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint
 		//printf("Encrypted a packet in the chan functionand replaced OG one !\n");
 		length = (uint8_t) encrypted_length; 
 		buf[1] = length;
+		printf("Actual length of packet is:  %d\n", encrypted_length);
 		} else {
 			printf("Encryption failed!\n");
 		return;
