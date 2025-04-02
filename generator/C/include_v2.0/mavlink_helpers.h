@@ -468,6 +468,29 @@ MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint
 						    (const uint8_t *)encrypted_packet, length, ck);
 	}
 #endif
+
+	if(msgid == 0){
+		status->current_tx_seq++;
+		checksum = crc_calculate((const uint8_t*)&buf[1], header_len);
+		crc_accumulate_buffer(&checksum, packet, length);
+		crc_accumulate(crc_extra, &checksum);
+		ck[0] = (uint8_t)(checksum & 0xFF);
+		ck[1] = (uint8_t)(checksum >> 8);
+		//printf("Step 1");
+		MAVLINK_START_UART_SEND(chan, header_len + 3 + (uint16_t)length + (uint16_t)signature_len);
+		//printf("Step 2");
+		_mavlink_send_uart(chan, (const char *)buf, header_len+1);
+		//printf("Step 3");
+		_mavlink_send_uart(chan, (const char*)packet, length);
+		//printf("Step 4");
+		_mavlink_send_uart(chan, (const char *)ck, 2);
+		if (signature_len != 0) {
+			_mavlink_send_uart(chan, (const char *)signature, signature_len);
+		}
+		//printf("Step 5");
+		MAVLINK_END_UART_SEND(chan, header_len + 3 + (uint16_t)length + (uint16_t)signature_len);
+		return;
+	}
 	//printf("Step 1");
 	MAVLINK_START_UART_SEND(chan, header_len + 3 + (uint16_t)length + (uint16_t)signature_len);
 	//printf("Step 2");
@@ -839,6 +862,7 @@ MAVLINK_HELPER uint8_t mavlink_frame_char_buffer(mavlink_message_t* rxmsg,
 		break;
 
 	case MAVLINK_PARSE_STATE_GOT_PAYLOAD: {
+		printf("GOT_PAYLOAD: msgid = %d, payload_len = %d\n", rxmsg->msgid, rxmsg->len);
 		const mavlink_msg_entry_t *e = mavlink_get_msg_entry(rxmsg->msgid);
 		if (e == NULL) {
 			// Message not found in CRC_EXTRA table.
