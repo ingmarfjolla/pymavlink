@@ -412,7 +412,7 @@ MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint
 
 	bool encrypt = 1;
 	//printf("[MAVLink Parser] ENTERED _mav_finalize_message_chan_send function");
-	if (encrypt && msgid != 0){
+	if (encrypt && msgid != 0 && msgid !=22){
 		printf("The message ID being encrypted:  %d\n", msgid);
 		unsigned char key[32] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10,
 			11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
@@ -469,7 +469,7 @@ MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint
 	}
 #endif
 
-	if(msgid == 0){
+	if(msgid == 0 || msgid == 22){
 		status->current_tx_seq++;
 		checksum = crc_calculate((const uint8_t*)&buf[1], header_len);
 		crc_accumulate_buffer(&checksum, packet, length);
