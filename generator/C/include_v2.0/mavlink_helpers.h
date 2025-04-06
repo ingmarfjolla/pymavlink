@@ -299,7 +299,7 @@ MAVLINK_HELPER uint16_t mavlink_finalize_message_buffer(mavlink_message_t* msg, 
 		if (enc_result == 0) {
 		// SUCCESS: copy encrypted data back into message payload
 		memcpy((unsigned char*)_MAV_PAYLOAD_NON_CONST(msg), encrypted_packet, encrypted_length);
-		printf("Encrypted a packet and replaced OG one !\n");
+		//printf("Encrypted a packet and replaced OG one !\n");
 		//msg->len = encrypted_length; // Update payload length to encrypted length!
 		msg->len = encrypted_length; // Update payload length to encrypted length!
 		buf[1] = encrypted_length;
@@ -413,7 +413,7 @@ MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint
 	bool encrypt = 1;
 	//printf("[MAVLink Parser] ENTERED _mav_finalize_message_chan_send function");
 	if (encrypt && msgid != 0 && msgid !=20 && msgid !=21 && msgid !=22){
-		printf("The message ID being encrypted:  %d\n", msgid);
+		//printf("The message ID being encrypted:  %d\n", msgid);
 		unsigned char key[32] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10,
 			11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
 			22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
@@ -862,7 +862,7 @@ MAVLINK_HELPER uint8_t mavlink_frame_char_buffer(mavlink_message_t* rxmsg,
 		break;
 
 	case MAVLINK_PARSE_STATE_GOT_PAYLOAD: {
-		printf("GOT_PAYLOAD: msgid = %d, payload_len = %d\n", rxmsg->msgid, rxmsg->len);
+		//printf("GOT_PAYLOAD: msgid = %d, payload_len = %d\n", rxmsg->msgid, rxmsg->len);
 		const mavlink_msg_entry_t *e = mavlink_get_msg_entry(rxmsg->msgid);
 		if (e == NULL) {
 			// Message not found in CRC_EXTRA table.
@@ -919,7 +919,7 @@ MAVLINK_HELPER uint8_t mavlink_frame_char_buffer(mavlink_message_t* rxmsg,
 			bool decrypt = 1;  
 			//printf("[MAVLink Parser] ENTERED MAVLINK_PARSE_STATE_GOT_BAD_CRC1 state machine");
 			if (decrypt && rxmsg->msgid != 0 && rxmsg->msgid != 20 && rxmsg->msgid != 21 && rxmsg->msgid != 22) {
-				printf("The message ID being decrypted is:  %d\n", rxmsg->msgid);
+				//printf("The message ID being decrypted is:  %d\n", rxmsg->msgid);
 				unsigned char key[32] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10,
 					11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
 					22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
@@ -936,7 +936,7 @@ MAVLINK_HELPER uint8_t mavlink_frame_char_buffer(mavlink_message_t* rxmsg,
 			    // 
 
 				uint8_t length = rxmsg ->len;
-				printf("The length of the decrypted packet before decryption is : %d\n " , length);
+				//printf("The length of the decrypted packet before decryption is : %d\n " , length);
 				unsigned char decrypted_packet[length-16];  // Buffer for decrypted payload
 				unsigned long long decrypted_length;
 
@@ -948,12 +948,12 @@ MAVLINK_HELPER uint8_t mavlink_frame_char_buffer(mavlink_message_t* rxmsg,
 					NULL, 0,  
 					nonce, key);
 				//printf("Some form of decryption happened, lets go to the next line");
-				printf("Decryption result for Ardupilot is %d\n", decr_result);
+				//printf("Decryption result for Ardupilot is %d\n", decr_result);
 				if (decr_result == 0) { 
 					//printf("[MAVLink Parser] something was decrypted but not finished?");
 					memcpy((uint8_t *)_MAV_PAYLOAD_NON_CONST(rxmsg), decrypted_packet, decrypted_length);
 					length = (uint8_t)decrypted_length;
-					printf("The length of the decrypted packet after decryption is : %d\n " , length);
+					//printf("The length of the decrypted packet after decryption is : %d\n " , length);
 					rxmsg ->len = (uint8_t)decrypted_length;
 					//printf("[MAVLink Parser] something was decrypted?");
 					memset(((uint8_t*)_MAV_PAYLOAD_NON_CONST(rxmsg)) + decrypted_length, 0, MAVLINK_MAX_PAYLOAD_LEN - decrypted_length);
