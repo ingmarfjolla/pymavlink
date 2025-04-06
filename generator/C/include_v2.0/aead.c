@@ -129,7 +129,6 @@ int crypto_aead_decrypt(unsigned char* m, unsigned long long* mlen,
   *mlen = clen - CRYPTO_ABYTES;
 
   /* print input bytes */
-  printf("entered decryption function");
   print("decrypt\n");
   printbytes("k", k, CRYPTO_KEYBYTES);
   printbytes("n", npub, CRYPTO_NPUBBYTES);
