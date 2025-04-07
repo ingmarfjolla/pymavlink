@@ -11,8 +11,7 @@
 #endif
 
 #include "mavlink_sha256.h"
-#include "api.h"
-#include "crypto_aead.h"
+#include "aead.c"
 #ifdef MAVLINK_USE_CXX_NAMESPACE
 namespace mavlink {
 #endif
@@ -268,46 +267,27 @@ MAVLINK_HELPER uint16_t mavlink_finalize_message_buffer(mavlink_message_t* msg, 
 		buf[8] = (msg->msgid >> 8) & 0xFF;
 		buf[9] = (msg->msgid >> 16) & 0xFF;
 	}
-	bool encrypt = 1;
-	//printf("[MAVLink Parser] ENTERED mavlink_finalize_message_buffer function");
-	if (encrypt && msg->msgid!=0 && msg->msgid != 20 && msg->msgid != 21 && msg->msgid != 22){
-		unsigned char key[32] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10,
-			11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
-			22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
+	bool encrypt = 0;
+	if (encrypt){
 		
-		// Nonce based on message sequence number + system ID + component ID
-		unsigned char nonce[32] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10,
-			11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
-			22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
-		//unsigned char key[CRYPTO_KEYBYTES] = {0};
+		unsigned char key[CRYPTO_KEYBYTES] = {0};
 		
 		// nonce based on message sequence number + system ID + component ID
+		unsigned char nonce[CRYPTO_NPUBBYTES] = {0};
+		memcpy(nonce, &status->current_tx_seq, sizeof(status->current_tx_seq));
+		memcpy(nonce + sizeof(status->current_tx_seq), &mavlink_system.sysid, sizeof(mavlink_system.sysid));
+		memcpy(nonce + sizeof(status->current_tx_seq) + sizeof(mavlink_system.sysid), 
+			&mavlink_system.compid, sizeof(mavlink_system.compid));
 
-		// memcpy(nonce, &status->current_tx_seq, sizeof(status->current_tx_seq));
-		// memcpy(nonce + sizeof(status->current_tx_seq), &system_id, sizeof(system_id));
-		// memcpy(nonce + sizeof(status->current_tx_seq) + sizeof(system_id), &component_id, sizeof(component_id));
-
-
-		unsigned char encrypted_packet[_mav_trim_payload(_MAV_PAYLOAD(msg), length) + 16];  // Encrypted payload buffer
+		unsigned char encrypted_packet[length + CRYPTO_ABYTES];  // Encrypted payload buffer
 		unsigned long long encrypted_length;
 
 		// encryption here
-		int enc_result = crypto_aead_encrypt(encrypted_packet, &encrypted_length,
-			(const unsigned char*)_MAV_PAYLOAD(msg), _mav_trim_payload(_MAV_PAYLOAD(msg), length),  
-			NULL, 0,  
-			NULL, nonce, key);
-		if (enc_result == 0) {
-		// SUCCESS: copy encrypted data back into message payload
-		memcpy((unsigned char*)_MAV_PAYLOAD_NON_CONST(msg), encrypted_packet, encrypted_length);
-		//printf("Encrypted a packet and replaced OG one !\n");
-		//msg->len = encrypted_length; // Update payload length to encrypted length!
-		msg->len = encrypted_length; // Update payload length to encrypted length!
-		buf[1] = encrypted_length;
-		} else {
-		printf("Encryption failed!");
-		return 0; // abort finalization on encryption failure
-		}
-		
+		crypto_aead_encrypt(encrypted_packet, &encrypted_length,
+							(const unsigned char*)_MAV_PAYLOAD(msg), length,  
+							NULL, 0,  
+							NULL, nonce, key);
+		length = (uint8_t) encrypted_length;
 	}	
 	
 	uint16_t checksum = crc_calculate(&buf[1], header_len-1);
@@ -371,92 +351,65 @@ MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint
 	uint8_t signature[MAVLINK_SIGNATURE_BLOCK_LEN];
 	bool mavlink1 = (status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) != 0;
 	bool signing = 	(!mavlink1) && status->signing && (status->signing->flags & MAVLINK_SIGNING_FLAG_SIGN_OUTGOING);
-	//original logic below, but i think it's a highball on the length and might be causing inconsistencies.
-	//unsigned char encrypted_packet[length + 16];  
-	unsigned char encrypted_packet[_mav_trim_payload(packet, length) + 16];  // Encrypted payload buffer
 
-	//printf("Highball estimate of the length of packet is:  %d\n", length + 16);
-	if (mavlink1) {
-			length = min_length;
-			if (msgid > 255) {
-				// can't send 16 bit messages
-				_mav_parse_error(status);
-				return;
-			}
-			header_len = MAVLINK_CORE_HEADER_MAVLINK1_LEN;
-			buf[0] = MAVLINK_STX_MAVLINK1;
-			buf[1] = length;
-			buf[2] = status->current_tx_seq;
-			buf[3] = mavlink_system.sysid;
-			buf[4] = mavlink_system.compid;
-			buf[5] = msgid & 0xFF;
-		} 
-	else {
-		uint8_t incompat_flags = 0;
-		if (signing) {
+        if (mavlink1) {
+            length = min_length;
+            if (msgid > 255) {
+                // can't send 16 bit messages
+                _mav_parse_error(status);
+                return;
+            }
+            header_len = MAVLINK_CORE_HEADER_MAVLINK1_LEN;
+            buf[0] = MAVLINK_STX_MAVLINK1;
+            buf[1] = length;
+            buf[2] = status->current_tx_seq;
+            buf[3] = mavlink_system.sysid;
+            buf[4] = mavlink_system.compid;
+            buf[5] = msgid & 0xFF;
+        } else {
+	    uint8_t incompat_flags = 0;
+	    if (signing) {
 		incompat_flags |= MAVLINK_IFLAG_SIGNED;
-		}
-			length = _mav_trim_payload(packet, length);
-			buf[0] = MAVLINK_STX;
-			buf[1] = length;
-			buf[2] = incompat_flags;
-			buf[3] = 0; // compat_flags
-			buf[4] = status->current_tx_seq;
-			buf[5] = mavlink_system.sysid;
-			buf[6] = mavlink_system.compid;
-			buf[7] = msgid & 0xFF;
-			buf[8] = (msgid >> 8) & 0xFF;
-			buf[9] = (msgid >> 16) & 0xFF;
-		}
+	    }
+            length = _mav_trim_payload(packet, length);
+            buf[0] = MAVLINK_STX;
+            buf[1] = length;
+            buf[2] = incompat_flags;
+            buf[3] = 0; // compat_flags
+            buf[4] = status->current_tx_seq;
+            buf[5] = mavlink_system.sysid;
+            buf[6] = mavlink_system.compid;
+            buf[7] = msgid & 0xFF;
+            buf[8] = (msgid >> 8) & 0xFF;
+            buf[9] = (msgid >> 16) & 0xFF;
+        }
 
 
-	bool encrypt = 1;
-	//printf("[MAVLink Parser] ENTERED _mav_finalize_message_chan_send function");
-	if (encrypt && msgid != 0 && msgid !=20 && msgid !=21 && msgid !=22){
-		//printf("The message ID being encrypted:  %d\n", msgid);
-		unsigned char key[32] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10,
-			11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
-			22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
+	bool encrypt = 0;
+	if (encrypt){
 		
-		// Nonce based on message sequence number + system ID + component ID
-		unsigned char nonce[32] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10,
-			11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
-			22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
-		
-		//unsigned char key[CRYPTO_KEYBYTES] = {0};
+		unsigned char key[CRYPTO_KEYBYTES] = {0};
 		
 		// nonce based on message sequence number + system ID + component ID
-		//unsigned char nonce[CRYPTO_NPUBBYTES] = {0};
+		unsigned char nonce[CRYPTO_NPUBBYTES] = {0};
+		memcpy(nonce, &status->current_tx_seq, sizeof(status->current_tx_seq));
+		memcpy(nonce + sizeof(status->current_tx_seq), &mavlink_system.sysid, sizeof(mavlink_system.sysid));
+		memcpy(nonce + sizeof(status->current_tx_seq) + sizeof(mavlink_system.sysid), 
+			&mavlink_system.compid, sizeof(mavlink_system.compid));
 
-		//commenting this out for later///
-		// memcpy(nonce, &status->current_tx_seq, sizeof(status->current_tx_seq));
-		// memcpy(nonce + sizeof(status->current_tx_seq), &mavlink_system.sysid, sizeof(mavlink_system.sysid));
-		// memcpy(nonce + sizeof(status->current_tx_seq) + sizeof(mavlink_system.sysid), 
-		// 	&mavlink_system.compid, sizeof(mavlink_system.compid));
-		////
-		
+		unsigned char encrypted_packet[length + CRYPTO_ABYTES];  // Encrypted payload buffer
 		unsigned long long encrypted_length;
 
 		// encryption here
-		int enc_result = crypto_aead_encrypt(encrypted_packet, &encrypted_length,
-			(const unsigned char*)packet, length,  
-			NULL, 0,  
-			NULL, nonce, key);
-		if (enc_result == 0) {
-		// Use memcpy explicitly here, safely copy encrypted payload back into original buffer
-		// memcpy((unsigned char*)packet, encrypted_packet, encrypted_length);
-		//printf("Encrypted a packet in the chan functionand replaced OG one !\n");
-		length = (uint8_t) encrypted_length; 
-		buf[1] = length;
-		//printf("Actual length of packet is:  %lld\n", encrypted_length);
-		} else {
-			printf("Encryption failed!\n");
-		return;
-		}
+		crypto_aead_encrypt(encrypted_packet, &encrypted_length,
+							(const unsigned char*)packet, length,  
+							NULL, 0,  
+							NULL, nonce, key);
+		length = (uint8_t) encrypted_length;
 	}	
 	status->current_tx_seq++;
 	checksum = crc_calculate((const uint8_t*)&buf[1], header_len);
-	crc_accumulate_buffer(&checksum, (const char*)encrypted_packet, length);
+	crc_accumulate_buffer(&checksum, packet, length);
 	crc_accumulate(crc_extra, &checksum);
 	ck[0] = (uint8_t)(checksum & 0xFF);
 	ck[1] = (uint8_t)(checksum >> 8);
@@ -465,46 +418,18 @@ MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint
 	if (signing) {
 		// possibly add a signature
 		signature_len = mavlink_sign_packet(status->signing, signature, buf, header_len+1,
-						    (const uint8_t *)encrypted_packet, length, ck);
+						    (const uint8_t *)packet, length, ck);
 	}
 #endif
 
-	if(msgid == 0 || msgid == 20 || msgid == 21 || msgid == 22){
-		status->current_tx_seq++;
-		checksum = crc_calculate((const uint8_t*)&buf[1], header_len);
-		crc_accumulate_buffer(&checksum, packet, length);
-		crc_accumulate(crc_extra, &checksum);
-		ck[0] = (uint8_t)(checksum & 0xFF);
-		ck[1] = (uint8_t)(checksum >> 8);
-		//printf("Step 1");
-		MAVLINK_START_UART_SEND(chan, header_len + 3 + (uint16_t)length + (uint16_t)signature_len);
-		//printf("Step 2");
-		_mavlink_send_uart(chan, (const char *)buf, header_len+1);
-		//printf("Step 3");
-		_mavlink_send_uart(chan, (const char*)packet, length);
-		//printf("Step 4");
-		_mavlink_send_uart(chan, (const char *)ck, 2);
-		if (signature_len != 0) {
-			_mavlink_send_uart(chan, (const char *)signature, signature_len);
-		}
-		//printf("Step 5");
-		MAVLINK_END_UART_SEND(chan, header_len + 3 + (uint16_t)length + (uint16_t)signature_len);
-		return;
-	}
-	//printf("Step 1");
 	MAVLINK_START_UART_SEND(chan, header_len + 3 + (uint16_t)length + (uint16_t)signature_len);
-	//printf("Step 2");
 	_mavlink_send_uart(chan, (const char *)buf, header_len+1);
-	//printf("Step 3");
-	_mavlink_send_uart(chan, (const char*)encrypted_packet, length);
-	//printf("Step 4");
+	_mavlink_send_uart(chan, packet, length);
 	_mavlink_send_uart(chan, (const char *)ck, 2);
 	if (signature_len != 0) {
 		_mavlink_send_uart(chan, (const char *)signature, signature_len);
 	}
-	//printf("Step 5");
 	MAVLINK_END_UART_SEND(chan, header_len + 3 + (uint16_t)length + (uint16_t)signature_len);
-	//printf("leaving message chan send fucntion");
 }
 
 /**
@@ -862,7 +787,6 @@ MAVLINK_HELPER uint8_t mavlink_frame_char_buffer(mavlink_message_t* rxmsg,
 		break;
 
 	case MAVLINK_PARSE_STATE_GOT_PAYLOAD: {
-		//printf("GOT_PAYLOAD: msgid = %d, payload_len = %d\n", rxmsg->msgid, rxmsg->len);
 		const mavlink_msg_entry_t *e = mavlink_get_msg_entry(rxmsg->msgid);
 		if (e == NULL) {
 			// Message not found in CRC_EXTRA table.
@@ -916,47 +840,29 @@ MAVLINK_HELPER uint8_t mavlink_frame_char_buffer(mavlink_message_t* rxmsg,
 					status->msg_received = MAVLINK_FRAMING_BAD_SIGNATURE;
 				}
 			}
-			bool decrypt = 1;  
-			//printf("[MAVLink Parser] ENTERED MAVLINK_PARSE_STATE_GOT_BAD_CRC1 state machine");
-			if (decrypt && rxmsg->msgid != 0 && rxmsg->msgid != 20 && rxmsg->msgid != 21 && rxmsg->msgid != 22) {
-				//printf("The message ID being decrypted is:  %d\n", rxmsg->msgid);
-				unsigned char key[32] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10,
-					11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
-					22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
+			bool decrypt = 0;  
+			if (decrypt) {
+				unsigned char key[CRYPTO_KEYBYTES] = {0};
 				
 				// Nonce based on message sequence number + system ID + component ID
-				unsigned char nonce[32] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10,
-					11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
-					22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
-				// commebnting this out for later 
-				// memcpy(nonce, &status->current_tx_seq, sizeof(status->current_tx_seq));
-				// memcpy(nonce + sizeof(status->current_tx_seq), &rxmsg->sysid, sizeof(rxmsg->sysid));
-				// memcpy(nonce + sizeof(status->current_tx_seq) + sizeof(rxmsg->sysid), 
-				// 		&rxmsg->compid, sizeof(rxmsg->compid));
-			    // 
-
+				unsigned char nonce[CRYPTO_NPUBBYTES] = {0};
+				memcpy(nonce, &status->current_tx_seq, sizeof(status->current_tx_seq));
+				memcpy(nonce + sizeof(status->current_tx_seq), &mavlink_system.sysid, sizeof(mavlink_system.sysid));
+				memcpy(nonce + sizeof(status->current_tx_seq) + sizeof(mavlink_system.sysid), 
+					&mavlink_system.compid, sizeof(mavlink_system.compid));
 				uint8_t length = rxmsg ->len;
-				//printf("The length of the decrypted packet before decryption is : %d\n " , length);
-				unsigned char decrypted_packet[length-16];  // Buffer for decrypted payload
+				unsigned char decrypted_packet[length];  // Buffer for decrypted payload
 				unsigned long long decrypted_length;
 
 				// Decryption here
-				//printf("[MAVLink Parser] right before i'm supposed to decrypt");
-				int decr_result = crypto_aead_decrypt(decrypted_packet, &decrypted_length,
-					NULL, 
-					(const unsigned char*)_MAV_PAYLOAD(rxmsg), length,  
-					NULL, 0,  
-					nonce, key);
-				//printf("Some form of decryption happened, lets go to the next line");
-				//printf("Decryption result for Ardupilot is %d\n", decr_result);
-				if (decr_result == 0) { 
-					//printf("[MAVLink Parser] something was decrypted but not finished?");
-					memcpy((uint8_t *)_MAV_PAYLOAD_NON_CONST(rxmsg), decrypted_packet, decrypted_length);
+				
+				if (crypto_aead_decrypt(decrypted_packet, &decrypted_length,
+										NULL, 
+										(const unsigned char*)_MAV_PAYLOAD(rxmsg), length,  
+										NULL, 0,  
+										nonce, key) == 0) { 
+					memcpy(_MAV_PAYLOAD_NON_CONST(rxmsg), decrypted_packet, decrypted_length);
 					length = (uint8_t)decrypted_length;
-					//printf("The length of the decrypted packet after decryption is : %d\n " , length);
-					rxmsg ->len = (uint8_t)decrypted_length;
-					//printf("[MAVLink Parser] something was decrypted?");
-					memset(((uint8_t*)_MAV_PAYLOAD_NON_CONST(rxmsg)) + decrypted_length, 0, MAVLINK_MAX_PAYLOAD_LEN - decrypted_length);
 				} else {
 					status->msg_received = MAVLINK_FRAMING_BAD_SIGNATURE; 
 				}
