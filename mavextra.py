@@ -217,6 +217,7 @@ average_data = {}
 
 def average(var, key, N):
     '''average over N points'''
+    global average_data
     if not key in average_data:
         average_data[key] = [var]*N
         return var
@@ -229,6 +230,7 @@ derivative_data = {}
 
 def second_derivative_5(var, key):
     '''5 point 2nd derivative'''
+    global derivative_data
     from . import mavutil
     tnow = mavutil.mavfile_global.timestamp
 
@@ -247,6 +249,7 @@ def second_derivative_5(var, key):
 
 def second_derivative_9(var, key):
     '''9 point 2nd derivative'''
+    global derivative_data
     from . import mavutil
     tnow = mavutil.mavfile_global.timestamp
 
@@ -270,6 +273,7 @@ def lowpass(var, key, factor):
     '''a simple lowpass filter'''
     if isnan(var):
         return None
+    global lowpass_data
     if not key in lowpass_data:
         lowpass_data[key] = var
     else:
@@ -286,6 +290,7 @@ lowpass_hz_data = {}
 
 def lowpassHz(var, key, sample_rate_hz, cutoff_hz):
     '''a simple lowpass filter with specified frequency'''
+    global lowpass_hz_data
     alpha = lpalpha(sample_rate_hz, cutoff_hz)
     if not key in lowpass_hz_data:
         lowpass_hz_data[key] = var
@@ -297,6 +302,7 @@ last_diff = {}
 
 def diff(var, key):
     '''calculate differences between values'''
+    global last_diff
     ret = 0
     if not key in last_diff:
         last_diff[key] = var
@@ -311,6 +317,7 @@ def delta(var, key, tusec=None):
     '''calculate slope'''
     if isnan(var):
         return None
+    global last_delta
     if tusec is not None:
         tnow = tusec * 1.0e-6
     else:
@@ -332,6 +339,7 @@ last_sum = {}
 
 def sum(var, key):
     '''sum variable'''
+    global last_sum
     ret = 0
     if not key in last_sum:
         last_sum[key] = 0
@@ -342,6 +350,7 @@ last_integral = {}
 
 def integral(var, key, timeus):
     '''integrate variable'''
+    global last_integral
     ret = 0
     if not key in last_integral:
         last_integral[key] = (0,timeus)
@@ -355,6 +364,7 @@ def integral(var, key, timeus):
 
 def delta_angle(var, key, tusec=None):
     '''calculate slope of an angle'''
+    global last_delta
     if tusec is not None:
         tnow = tusec * 1.0e-6
     else:
@@ -1567,8 +1577,15 @@ def sim_body_rates(SIM):
 
 def reset_state_data():
     '''reset state data, used on log rewind'''
+    global average_data
+    global derivative_data
+    global lowpass_data
+    global last_diff
+    global last_delta
     global first_fix
     global dcm_state
+    global last_sum
+    global last_integral
     average_data.clear()
     derivative_data.clear()
     lowpass_data.clear()
@@ -1661,11 +1678,3 @@ def RotateMag(MAG,rotation):
     '''rotate a MAG message by rotation enumeration'''
     v = Vector3(MAG.MagX,MAG.MagY,MAG.MagZ)
     return v.rotate_by_id(rotation)
-
-def feet(meters):
-    '''convert value from meters to feet'''
-    return meters/0.3048
-
-def knots(mps):
-    '''convert value from m/s to knots'''
-    return mps/0.51444

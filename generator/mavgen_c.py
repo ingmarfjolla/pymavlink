@@ -1,10 +1,15 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 '''
 parse a MAVLink protocol XML file and generate a C implementation
 
 Copyright Andrew Tridgell 2011
 Released under GNU GPL version 3 or later
 '''
+from __future__ import print_function
+from future.utils import iteritems
+
+from builtins import range
+from builtins import object
 
 import os
 from . import mavparse, mavtemplate
@@ -673,7 +678,7 @@ def generate_one(basename, xml):
     # form message name array
     xml.message_name_array = ''
     # sort by names
-    for msgid, name in sorted(xml.message_names.items(), key=lambda k_v: (k_v[1], k_v[0])):
+    for msgid, name in sorted(iteritems(xml.message_names), key=lambda k_v: (k_v[1], k_v[0])):
         xml.message_name_array += '{ "%s", %u }, ' % (name, msgid)
     xml.message_name_array = xml.message_name_array[:-2]
 

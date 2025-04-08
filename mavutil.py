@@ -159,22 +159,10 @@ class mavfile_state(object):
         self.armed = False # canonical arm state for the vehicle as a whole
 
         if float(mavlink.WIRE_PROTOCOL_VERSION) >= 1:
-            try:
-                self.messages['HOME'] = mavlink.MAVLink_gps_raw_int_message(0,0,0,0,0,0,0,0,0,0)
-            except AttributeError:
-                # may be using a minimal dialect
-                pass
-            try:
-                mavlink.MAVLink_waypoint_message = mavlink.MAVLink_mission_item_message
-            except AttributeError:
-                # may be using a minimal dialect
-                pass
+            self.messages['HOME'] = mavlink.MAVLink_gps_raw_int_message(0,0,0,0,0,0,0,0,0,0)
+            mavlink.MAVLink_waypoint_message = mavlink.MAVLink_mission_item_message
         else:
-            try:
-                self.messages['HOME'] = mavlink.MAVLink_gps_raw_message(0,0,0,0,0,0,0,0,0)
-            except AttributeError:
-                # may be using a minimal dialect
-                pass
+            self.messages['HOME'] = mavlink.MAVLink_gps_raw_message(0,0,0,0,0,0,0,0,0)
 
 class param_state(object):
     '''state for a particular system id/component id pair'''
@@ -295,6 +283,7 @@ class mavfile(object):
     
     def auto_mavlink_version(self, buf):
         '''auto-switch mavlink protocol version'''
+        global mavlink
         if len(buf) == 0:
             return
         try:
@@ -1997,6 +1986,7 @@ except:
 
 def is_printable(c):
     '''see if a character is printable'''
+    global have_ascii
     if have_ascii:
         return ascii.isprint(c)
     if isinstance(c, int):
