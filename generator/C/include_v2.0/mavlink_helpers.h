@@ -270,7 +270,8 @@ MAVLINK_HELPER uint16_t mavlink_finalize_message_buffer(mavlink_message_t* msg, 
 	}
 	bool encrypt = 1;
 	//printf("[MAVLink Parser] ENTERED mavlink_finalize_message_buffer function");
-	if (encrypt && msg->msgid!=0 && msg->msgid != 20 && msg->msgid != 21 && msg->msgid != 22){
+	if (encrypt && msg->msgid!=0 && msg->msgid != 20 && msg->msgid != 21 && msg->msgid != 22 
+		&& msg->msgid != 35 && msg->msgid != 65 && msg->msgid != 70){
 		unsigned char key[32] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10,
 			11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
 			22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
@@ -412,7 +413,8 @@ MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint
 
 	bool encrypt = 1;
 	//printf("[MAVLink Parser] ENTERED _mav_finalize_message_chan_send function");
-	if (encrypt && msgid != 0 && msgid !=20 && msgid !=21 && msgid !=22){
+	if (encrypt && msgid != 0 && msgid !=20 && msgid !=21 && msgid !=22 
+		&& msgid != 35 && msgid != 65 && msgid != 70){
 		//printf("The message ID being encrypted:  %d\n", msgid);
 		unsigned char key[32] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10,
 			11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
@@ -469,7 +471,7 @@ MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint
 	}
 #endif
 
-	if(msgid == 0 || msgid == 20 || msgid == 21 || msgid == 22){
+	if(msgid == 0 || msgid == 20 || msgid == 21 || msgid == 22 || msgid == 35 || msgid == 65 || msgid == 70){
 		status->current_tx_seq++;
 		checksum = crc_calculate((const uint8_t*)&buf[1], header_len);
 		crc_accumulate_buffer(&checksum, packet, length);
@@ -918,7 +920,8 @@ MAVLINK_HELPER uint8_t mavlink_frame_char_buffer(mavlink_message_t* rxmsg,
 			}
 			bool decrypt = 1;  
 			//printf("[MAVLink Parser] ENTERED MAVLINK_PARSE_STATE_GOT_BAD_CRC1 state machine");
-			if (decrypt && rxmsg->msgid != 0 && rxmsg->msgid != 20 && rxmsg->msgid != 21 && rxmsg->msgid != 22) {
+			if (decrypt && rxmsg->msgid != 0 && rxmsg->msgid != 20 && rxmsg->msgid != 21 && rxmsg->msgid != 22
+				&& rxmsg->msgid != 35 && rxmsg->msgid != 65 && rxmsg->msgid != 70) {
 				//printf("The message ID being decrypted is:  %d\n", rxmsg->msgid);
 				unsigned char key[32] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10,
 					11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
